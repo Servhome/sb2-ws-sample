@@ -105,7 +105,7 @@ public class WebServiceConfig {
                 try {
                     Class<?> clazz = MockedEndpointGenerator.generateMockEndpoint(def);
                     Object o = clazz.newInstance();
-                    genericApplicationContext.registerBean("allSoapEndpoint", Object.class, () -> {
+                    genericApplicationContext.registerBean("allSoapEndpoint-" + endpointName, Object.class, () -> {
                         try {
                             return o;
                         } catch (Exception e) {
