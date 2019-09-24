@@ -1,5 +1,7 @@
 package com.sample.config;
 
+import com.sample.utils.MockEndpointDefinition;
+import com.sample.utils.MockedEndpointGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +18,7 @@ import org.springframework.ws.transport.http.MessageDispatcherServlet;
 import org.springframework.ws.wsdl.wsdl11.DefaultWsdl11Definition;
 import org.springframework.xml.xsd.SimpleXsdSchema;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 @EnableWs
@@ -45,6 +48,9 @@ public class WebServiceConfig {
         public void initialize(GenericApplicationContext genericApplicationContext) {
             Environment env = genericApplicationContext.getEnvironment();
 
+            String[] endpointNames = env.getProperty("soap.endpoints", String[].class);
+            registerEndpointOperationMappings(genericApplicationContext, endpointNames);
+
             Arrays.stream(env.getProperty("soap.endpoints", String[].class))
                     .forEach(endpointName -> registerEndpointService(genericApplicationContext, env, endpointName, env.getProperty("soap.endpoints.path"))
             );
@@ -70,5 +76,47 @@ public class WebServiceConfig {
                         return wsdl11Definition;
                     });
         }
+
+        private void registerEndpointOperationMappings(GenericApplicationContext genericApplicationContext, String[] endpointNames) {
+
+            Environment env = genericApplicationContext.getEnvironment();
+            for (String endpointName : endpointNames) {
+
+                String namespace = env.getProperty(SOAP_ENDPOINTS + endpointName + ".target.namespace");
+                int operationsLength = env.getProperty(SOAP_ENDPOINTS + endpointName + ".operations.size", Integer.class);
+
+                MockEndpointDefinition def = MockEndpointDefinition.builder()
+                        .serviceName(endpointName)
+                        .namespace(namespace)
+                        .operations(new ArrayList<>())
+                        .build();
+
+                for (int i = 0; i < operationsLength; i++) {
+                    String prefix = SOAP_ENDPOINTS + endpointName + ".operations." + i + ".";
+                    def.getOperations().add(
+                            MockEndpointDefinition.MockOperation.builder()
+                                    .localPart(env.getProperty(prefix + "localPart"))
+                                    .requestType(env.getProperty(prefix + "requestType"))
+                                    .responseType(env.getProperty(prefix + "responseType"))
+                                    .build()
+                    );
+                }
+
+                try {
+                    Class<?> clazz = MockedEndpointGenerator.generateMockEndpoint(def);
+                    Object o = clazz.newInstance();
+                    genericApplicationContext.registerBean("allSoapEndpoint", Object.class, () -> {
+                        try {
+                            return o;
+                        } catch (Exception e) {
+                            return null;
+                        }
+                    });
+                } catch (Exception e) {
+                    throw new IllegalStateException("Mock Endpoints creation failed", e);
+                }
+            }
+        }
+
     }
 }

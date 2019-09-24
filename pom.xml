@@ -16,11 +16,23 @@
 
     <properties>
         <java.version>8</java.version>
-        <javassist.version>3.25.0-GA</javassist.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <javassist.version>3.25.0-GA</javassist.version>
+        <org.apache.velocity.version>1.7</org.apache.velocity.version>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity</artifactId>
+            <version>${org.apache.velocity.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>${javassist.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
